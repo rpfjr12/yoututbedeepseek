@@ -12,13 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install system dependencies for Manim
+      - name: Install system dependencies for Manim (Ubuntu 24.04)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libcairo2 \
             libcairo2-dev \
-            libpango1.0-0 \
+            libpango-1.0-0 \
             libpango1.0-dev \
             libglib2.0-dev \
             ffmpeg \
