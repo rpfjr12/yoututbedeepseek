@@ -3,7 +3,7 @@ name: Generate Shorts
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # Runs daily at 6 AM UTC
+    - cron: '0 6 * * *'
 
 jobs:
   generate:
@@ -12,12 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install system dependencies for Manim
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcairo2 \
+            libcairo2-dev \
+            libpango1.0-0 \
+            libpango1.0-dev \
+            libglib2.0-dev \
+            ffmpeg \
+            pkg-config
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
       - name: Run generator
