@@ -1,4 +1,3 @@
-```python
 # Configuration settings
 
 # Output directories
