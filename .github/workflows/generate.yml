@@ -37,6 +37,20 @@ jobs:
       - name: Run Shorts Generator
         run: python batch_run.py
 
+      - name: DEBUG - List all output folders
+        if: always()
+        run: |
+          echo "=== SCRIPTS ==="
+          ls -la scripts/scripts_output/ 2>/dev/null || echo "NO SCRIPTS FOLDER"
+          echo "=== ANIMATIONS ==="
+          ls -la animation/animations_output/ 2>/dev/null || echo "NO ANIMATIONS FOLDER"
+          echo "=== CAPTIONS ==="
+          ls -la captions/captions_output/ 2>/dev/null || echo "NO CAPTIONS FOLDER"
+          echo "=== THUMBNAILS ==="
+          ls -la thumbnails/thumbnails_output/ 2>/dev/null || echo "NO THUMBNAILS FOLDER"
+          echo "=== OUTPUT ==="
+          ls -la output/ 2>/dev/null || echo "NO OUTPUT FOLDER"
+
       - name: Upload generated videos to artifacts
         uses: actions/upload-artifact@v4
         with:
