@@ -6,6 +6,7 @@ Reads scripts from scripts/scripts_output/ and renders MP4 files.
 import os
 import sys
 import glob
+import shutil
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from manim import *
@@ -101,6 +102,15 @@ class StickFigureStory(Scene):
         
         return VGroup(bg, caption)
 
+def find_manim_output():
+    """Find the Manim-rendered MP4 file."""
+    # Search for StickFigureStory.mp4 in media/ directory
+    for root, dirs, files in os.walk("media"):
+        for f in files:
+            if f == "StickFigureStory.mp4":
+                return os.path.join(root, f)
+    return None
+
 def render_all_scripts():
     """Render all scripts as stick figure animations."""
     os.makedirs(ANIMATION_DIR, exist_ok=True)
@@ -127,15 +137,32 @@ def render_all_scripts():
         base_name = os.path.basename(script_file).replace(".txt", "")
         output_file = os.path.join(ANIMATION_DIR, f"{base_name}.mp4")
         
+        # Skip if already exists
+        if os.path.exists(output_file):
+            print(f"Already exists: {output_file}")
+            continue
+        
+        # Clean up old media folder to avoid confusion
+        if os.path.exists("media"):
+            shutil.rmtree("media")
+        
         # Render using Manim
         scene = StickFigureStory(script_lines)
         scene.render()
         
-        # Move output to our directory
-        default_output = f"media/videos/stick_figure_story/1080p60/StickFigureStory.mp4"
-        if os.path.exists(default_output):
-            os.rename(default_output, output_file)
+        # Find the actual output file
+        default_output = find_manim_output()
+        
+        if default_output and os.path.exists(default_output):
+            shutil.move(default_output, output_file)
             print(f"Saved: {output_file}")
+        else:
+            print(f"ERROR: Could not find rendered video.")
+            print("Searched in media/ for StickFigureStory.mp4")
+    
+    # Clean up media folder
+    if os.path.exists("media"):
+        shutil.rmtree("media")
     
     print("\nAll animations rendered!")
 
