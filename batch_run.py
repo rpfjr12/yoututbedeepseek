@@ -17,15 +17,11 @@ def run_script(script_path, description):
         return False
     
     try:
+        # Run with output visible instead of captured
         result = subprocess.run(
             [sys.executable, script_path],
-            capture_output=True,
-            text=True,
             cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         )
-        print(result.stdout)
-        if result.stderr:
-            print(f"Stderr: {result.stderr}")
         return result.returncode == 0
     except Exception as e:
         print(f"Failed to run {script_path}: {e}")
