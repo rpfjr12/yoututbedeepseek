@@ -12,6 +12,10 @@ def run_script(script_path, description):
     print(f"Running: {description}")
     print(f"{'='*60}")
     
+    if not os.path.exists(script_path):
+        print(f"Script not found: {script_path}")
+        return False
+    
     try:
         result = subprocess.run(
             [sys.executable, script_path],
@@ -21,7 +25,7 @@ def run_script(script_path, description):
         )
         print(result.stdout)
         if result.stderr:
-            print(f"Errors: {result.stderr}")
+            print(f"Stderr: {result.stderr}")
         return result.returncode == 0
     except Exception as e:
         print(f"Failed to run {script_path}: {e}")
@@ -36,21 +40,17 @@ def main():
         (os.path.join(base_dir, "animation", "stick_figure_story.py"), "Animating stick figures"),
         (os.path.join(base_dir, "captions", "add_captions.py"), "Adding captions"),
         (os.path.join(base_dir, "thumbnails", "create_thumbnail.py"), "Creating thumbnails"),
-        (os.path.join(base_dir, "upload", "prepare_upload.py"), "Preparing final upload files"),  # ADDED
+        (os.path.join(base_dir, "upload", "prepare_upload.py"), "Preparing final upload files"),
     ]
     
     for script_path, description in steps:
-        if not os.path.exists(script_path):
-            print(f"Script not found: {script_path}")
-            continue
-        
         success = run_script(script_path, description)
         if not success:
             print(f"Step failed: {description}")
-            print("Auto-continuing...")  # FIXED - no input() in GitHub Actions
+            print("Continuing anyway...")
     
     print(f"\n{'='*60}")
-    print("Pipeline complete! Check the output/ folder for final files.")
+    print("Pipeline complete!")
     print(f"{'='*60}")
 
 if __name__ == "__main__":
