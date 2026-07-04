@@ -1,5 +1,5 @@
 """
-Runs the entire pipeline: scripts -> animations -> captions -> thumbnails.
+Runs the entire pipeline: scripts -> animations -> captions -> thumbnails -> upload prep.
 """
 
 import os
@@ -36,6 +36,7 @@ def main():
         (os.path.join(base_dir, "animation", "stick_figure_story.py"), "Animating stick figures"),
         (os.path.join(base_dir, "captions", "add_captions.py"), "Adding captions"),
         (os.path.join(base_dir, "thumbnails", "create_thumbnail.py"), "Creating thumbnails"),
+        (os.path.join(base_dir, "upload", "prepare_upload.py"), "Preparing final upload files"),  # ADDED
     ]
     
     for script_path, description in steps:
@@ -46,10 +47,7 @@ def main():
         success = run_script(script_path, description)
         if not success:
             print(f"Step failed: {description}")
-            user_input = input("Continue anyway? (y/n): ")
-            if user_input.lower() != "y":
-                print("Pipeline stopped.")
-                return
+            print("Auto-continuing...")  # FIXED - no input() in GitHub Actions
     
     print(f"\n{'='*60}")
     print("Pipeline complete! Check the output/ folder for final files.")
