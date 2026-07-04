@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install system dependencies for Manim (Ubuntu 24.04)
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -23,7 +23,8 @@ jobs:
             libpango1.0-dev \
             libglib2.0-dev \
             ffmpeg \
-            pkg-config
+            pkg-config \
+            fonts-dejavu
 
       - name: Set up Python
         uses: actions/setup-python@v4
