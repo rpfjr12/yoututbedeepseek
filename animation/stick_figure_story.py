@@ -1,170 +1,130 @@
 """
-Animates stick figure stories using Manim.
-Reads scripts from scripts/scripts_output/ and renders MP4 files.
+Adds captions to stick figure videos using FFmpeg.
+If FFmpeg is not available, copies videos to output folder.
 """
 
 import os
 import sys
 import glob
 import shutil
+import subprocess
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import CAPTIONS_DIR, ANIMATION_DIR
 
-from manim import *
-from config import ANIMATION_DIR, VIDEO_WIDTH, VIDEO_HEIGHT, FPS
+def check_ffmpeg():
+    """Check if FFmpeg is installed."""
+    try:
+        subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
+        return True
+    except (subprocess.FileNotFoundError, subprocess.CalledProcessError):
+        return False
 
-# Configure Manim for vertical Shorts format
-config.pixel_width = VIDEO_WIDTH
-config.pixel_height = VIDEO_HEIGHT
-config.frame_rate = FPS
-config.background_color = WHITE
+def escape_ffmpeg_text(text):
+    """Escape special characters for FFmpeg drawtext filter."""
+    text = text.replace("\\", "\\\\")
+    text = text.replace("'", "'\\\\''")
+    text = text.replace(":", "\\:")
+    text = text.replace("=", "\\=")
+    text = text.replace("%", "%%")
+    return text
 
-class StickFigureStory(Scene):
-    """Base class for stick figure animations."""
+def add_captions_to_video(input_path, output_path, caption_text):
+    """Add a simple caption overlay using FFmpeg."""
+    safe_text = escape_ffmpeg_text(caption_text)
     
-    def __init__(self, script_lines, **kwargs):
-        super().__init__(**kwargs)
-        self.script_lines = script_lines
+    # Use DejaVu font (available on Ubuntu)
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     
-    def construct(self):
-        # Create stick figure
-        stick_figure = self.create_stick_figure()
-        stick_figure.move_to(ORIGIN)
-        
-        # Animate each line
-        for i, line in enumerate(self.script_lines):
-            # Create text
-            text = self.create_caption(line)
-            text.next_to(stick_figure, DOWN, buff=1.0)
-            
-            # Animate stick figure (simple wave)
-            self.play(
-                Create(stick_figure) if i == 0 else AnimationGroup(),
-                Write(text),
-                run_time=0.5
-            )
-            
-            # Hold for reading time
-            self.wait(2.5 - 0.5)  # 2.5 seconds per line minus animation time
-            
-            # Fade out text if not last line
-            if i < len(self.script_lines) - 1:
-                self.play(FadeOut(text), run_time=0.3)
-        
-        # Final hold
-        self.wait(1)
+    # If font doesn't exist, try to find any available font
+    if not os.path.exists(font_path):
+        possible_fonts = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        ]
+        for pf in possible_fonts:
+            if os.path.exists(pf):
+                font_path = pf
+                break
     
-    def create_stick_figure(self):
-        """Create a simple stick figure."""
-        # Head
-        head = Circle(radius=0.3, color=BLACK, fill_opacity=0)
-        
-        # Body
-        body = Line(ORIGIN, DOWN * 1.0, color=BLACK)
-        
-        # Arms
-        left_arm = Line(ORIGIN, LEFT * 0.6 + UP * 0.2, color=BLACK)
-        right_arm = Line(ORIGIN, RIGHT * 0.6 + UP * 0.2, color=BLACK)
-        
-        # Legs
-        left_leg = Line(DOWN * 1.0, DOWN * 1.0 + LEFT * 0.4, color=BLACK)
-        right_leg = Line(DOWN * 1.0, DOWN * 1.0 + RIGHT * 0.4, color=BLACK)
-        
-        # Combine
-        stick_figure = VGroup(head, body, left_arm, right_arm, left_leg, right_leg)
-        
-        # Add a simple face
-        left_eye = Dot(point=LEFT * 0.1 + UP * 0.05, radius=0.03, color=BLACK)
-        right_eye = Dot(point=RIGHT * 0.1 + UP * 0.05, radius=0.03, color=BLACK)
-        mouth = Arc(arc_center=ORIGIN, radius=0.08, angle=PI/2, color=BLACK)
-        mouth.shift(DOWN * 0.05)
-        
-        face = VGroup(left_eye, right_eye, mouth)
-        face.move_to(head.get_center())
-        
-        stick_figure.add(face)
-        return stick_figure
+    drawtext_filter = (
+        f"drawtext=fontfile={font_path}:"
+        f"text='{safe_text}':"
+        f"fontsize=48:"
+        f"fontcolor=white:"
+        f"box=1:"
+        f"boxcolor=black@0.7:"
+        f"boxborderw=10:"
+        f"x=(w-text_w)/2:"
+        f"y=h-150:"
+        f"enable='between(t,0,3)'"
+    )
     
-    def create_caption(self, text):
-        """Create caption text with background."""
-        caption = Text(text, font_size=40, color=BLACK, font="Arial")
-        caption.set_stroke(BLACK, width=0)
-        
-        # Add background rectangle
-        bg = Rectangle(
-            width=caption.width + 0.5,
-            height=caption.height + 0.3,
-            color=WHITE,
-            fill_opacity=0.8,
-            stroke_color=BLACK,
-            stroke_width=2
-        )
-        bg.move_to(caption.get_center())
-        
-        return VGroup(bg, caption)
+    cmd = [
+        "ffmpeg",
+        "-i", input_path,
+        "-vf", drawtext_filter,
+        "-c:a", "copy",
+        "-y",
+        output_path
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"FFmpeg error: {e.stderr[:500]}")
+        return False
 
-def find_manim_output():
-    """Find the Manim-rendered MP4 file."""
-    # Search for StickFigureStory.mp4 in media/ directory
-    for root, dirs, files in os.walk("media"):
-        for f in files:
-            if f == "StickFigureStory.mp4":
-                return os.path.join(root, f)
-    return None
-
-def render_all_scripts():
-    """Render all scripts as stick figure animations."""
-    os.makedirs(ANIMATION_DIR, exist_ok=True)
+def process_videos():
+    """Add captions to all animation videos."""
+    os.makedirs(CAPTIONS_DIR, exist_ok=True)
     
-    # Get all script files
-    script_files = sorted(glob.glob("scripts/scripts_output/*.txt"))
+    ffmpeg_available = check_ffmpeg()
+    print(f"FFmpeg available: {ffmpeg_available}")
     
-    if not script_files:
-        print("No scripts found. Run generate_scripts.py first.")
+    # Get all animation videos
+    video_files = sorted(glob.glob(os.path.join(ANIMATION_DIR, "*.mp4")))
+    
+    if not video_files:
+        print(f"No videos found in {ANIMATION_DIR}. Run animation script first.")
         return
     
-    for script_file in script_files:
-        # Read script
-        with open(script_file, "r") as f:
-            lines = f.readlines()
-        
-        # Extract title and lines
-        title = lines[0].replace("Title: ", "").strip()
-        script_lines = [line.strip() for line in lines[3:] if line.strip()]
-        
-        print(f"Rendering: {title} ({len(script_lines)} lines)")
-        
-        # Create output filename
-        base_name = os.path.basename(script_file).replace(".txt", "")
-        output_file = os.path.join(ANIMATION_DIR, f"{base_name}.mp4")
+    for video_file in video_files:
+        base_name = os.path.basename(video_file)
+        output_file = os.path.join(CAPTIONS_DIR, base_name)
         
         # Skip if already exists
         if os.path.exists(output_file):
             print(f"Already exists: {output_file}")
             continue
         
-        # Clean up old media folder to avoid confusion
-        if os.path.exists("media"):
-            shutil.rmtree("media")
+        # Get caption from script file
+        script_file = video_file.replace("animations_output", "scripts_output").replace(".mp4", ".txt")
+        caption_text = "Watch till the end"  # Default caption
         
-        # Render using Manim
-        scene = StickFigureStory(script_lines)
-        scene.render()
+        if os.path.exists(script_file):
+            with open(script_file, "r") as f:
+                lines = f.readlines()
+                for line in lines[3:]:
+                    if line.strip():
+                        caption_text = line.strip()
+                        break
         
-        # Find the actual output file
-        default_output = find_manim_output()
-        
-        if default_output and os.path.exists(default_output):
-            shutil.move(default_output, output_file)
-            print(f"Saved: {output_file}")
+        if ffmpeg_available:
+            print(f"Adding captions to: {base_name}")
+            success = add_captions_to_video(video_file, output_file, caption_text)
+            
+            if success:
+                print(f"Saved: {output_file}")
+            else:
+                print(f"FFmpeg failed. Copying original.")
+                shutil.copy2(video_file, output_file)
         else:
-            print(f"ERROR: Could not find rendered video.")
-            print("Searched in media/ for StickFigureStory.mp4")
+            shutil.copy2(video_file, output_file)
+            print(f"Copied (no FFmpeg): {output_file}")
     
-    # Clean up media folder
-    if os.path.exists("media"):
-        shutil.rmtree("media")
-    
-    print("\nAll animations rendered!")
+    print("\nAll videos processed!")
 
 if __name__ == "__main__":
-    render_all_scripts()
+    process_videos()
