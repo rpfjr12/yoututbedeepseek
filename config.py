@@ -12,7 +12,7 @@ FINAL_OUTPUT_DIR = "output"
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 FPS = 30
-SHORT_DURATION = 55  # seconds
+SHORT_DURATION = 35  # seconds - optimal for Shorts algorithm
 
 # Caption settings
 CAPTION_FONT_SIZE = 48
