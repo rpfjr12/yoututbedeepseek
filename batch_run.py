@@ -17,11 +17,9 @@ def run_script(script_path, description):
         return False
     
     try:
-        # Run with output visible (no capture_output so we see errors)
         result = subprocess.run(
             [sys.executable, script_path],
-            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         return result.returncode == 0
     except Exception as e:
         print(f"Failed to run {script_path}: {e}")
