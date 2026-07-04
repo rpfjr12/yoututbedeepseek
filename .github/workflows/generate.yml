@@ -35,3 +35,10 @@ jobs:
 
       - name: Run Shorts Generator
         run: python batch_run.py
+
+      - name: Upload generated videos to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-shorts
+          path: output/
+          retention-days: 5
