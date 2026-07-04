@@ -17,7 +17,7 @@ def run_script(script_path, description):
         return False
     
     try:
-        # Run with output visible instead of captured
+        # Run with output visible (no capture_output so we see errors)
         result = subprocess.run(
             [sys.executable, script_path],
             cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
